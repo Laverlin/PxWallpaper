@@ -1,14 +1,30 @@
 import requests
 import json
+import shutil
 
 def main():
     print("let's start")
 
-    result = requests.get("https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=1&consumer_key=" + getConsumerKey())
-    data = result.json()
-    print("photo url: " + data['photos'][0]['images'][0]['url'])
-    print("photo format: " + data["photos"][0]["images"][0]["format"])
-    print(json.dumps(data, indent = 2))
+    jsonResult = requests.get("https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=1&consumer_key=" + getConsumerKey()).json()
+    imageUrl = jsonResult['photos'][0]['images'][0]['url']
+    imageFormat = jsonResult["photos"][0]["images"][0]["format"]
+
+    imageResponse = requests.get(imageUrl, stream = True)
+    if imageResponse.status_code == 200:
+        with open("todaysBest.jpg", "wb") as imageFile:
+            imageResponse.raw.decode_content = True
+            shutil.copyfileobj(imageResponse.raw, imageFile)
+
+
+
+
+
+
+    print("photo url: {0}".format(imageUrl))
+
+    print("photo format: {0}".format(imageFormat))
+
+    print(json.dumps(jsonResult, indent = 2))
 
 
 
