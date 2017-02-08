@@ -1,7 +1,8 @@
 {
-  "authentication": 
-  {
+  "authentication": {
     "consumer_key": "6ZTI8yGMqMddOYTcCnWyyrsKNmeiIMlzuX5Conib",
     "consumer_secret": "__your_consumer_secret__"
-  }
+  },
+  "image_path": "C:\\Download",
+  "image_file": "BestPhoto.jpg"
 }
