@@ -3,6 +3,8 @@ import json
 import shutil
 import os
 
+import ctypes
+
 
 def main():
     print("let's start")
@@ -20,16 +22,9 @@ def main():
             imageResponse.raw.decode_content = True
             shutil.copyfileobj(imageResponse.raw, imageFile)
 
+    ctypes.windll.user32.SystemParametersInfoW(20, 0, photoFullName , 1)
 
-
-
-
-
-    print("photo url: {0}".format(imageUrl))
-
-    print("photo format: {0}".format(imageFormat))
-
-    print(json.dumps(jsonResult, indent = 2))
+    print("done")
 
 
 
