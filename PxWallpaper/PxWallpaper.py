@@ -2,7 +2,7 @@ import requests
 import json
 import shutil
 import os
-
+import sys
 import ctypes
 
 
@@ -29,8 +29,21 @@ def main():
 
 
 def GetConfig():
-    
-    with open('config.json') as config:
+
+    # determine if application is a script file or frozen exe
+    #
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+        config_name = os.path.basename(sys.executable).replace('.exe','.config')
+    elif __file__:
+        application_path = os.path.dirname(__file__)
+        config_name = os.path.basename(__file__).replace('.py','.config')
+
+    config_path = os.path.join(application_path, config_name)
+
+    print(config_path)
+
+    with open(config_name) as config:
         config = json.loads(config.read())
         return config["authentication"]["consumer_key"], config["image_path"], config["image_file"]
 
