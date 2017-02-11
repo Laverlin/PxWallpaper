@@ -5,7 +5,10 @@ import os
 import sys
 import ctypes
 import logging
-
+import PIL
+from PIL import ImageFont
+from PIL import Image
+from PIL import ImageDraw
 
 def main():
 
@@ -48,6 +51,17 @@ def main():
             imageResponse.raw.decode_content = True
             shutil.copyfileobj(imageResponse.raw, imageFile)
 
+    # write info
+    #
+    fontDark = ImageFont.truetype(os.path.join(application_path,"Verdana.ttf"), 23)
+    fontLight = ImageFont.truetype(os.path.join(application_path,"Verdana.ttf"), 20)
+    image = Image.open(photoFullName)
+    draw = ImageDraw.Draw(image)
+    draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (0,0,0), font = fontDark)
+    draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (200,255,128), font = fontLight)
+    draw = ImageDraw.Draw(image)
+    image.save(photoFullName)
+    
     # refresh background picture
     #
     ctypes.windll.user32.SystemParametersInfoW(20, 0, photoFullName , 1)
