@@ -27,20 +27,13 @@ def main():
     logConsoleHandler.setFormatter(logFormatter) 
     logger.addHandler(logConsoleHandler)
 
+    # load config
+    #
+    consumer_key, image_path, image_file = GetConfig()
+
     # request best photo info
     #
-    logger.info("begin download new wallpaper...")
-
-    consumer_key, image_path, image_file = GetConfig()
-    requestUrl = "https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=1&consumer_key={0}".format(consumer_key)
-    jsonResult = requests.get(requestUrl).json()
-    imageUrl = jsonResult['photos'][0]['images'][0]['url']
-    imageFormat = jsonResult["photos"][0]["images"][0]["format"]
-    photoName = jsonResult['photos'][0]['name']
-    authorName = jsonResult['photos'][0]['user']['fullname']
-
-    logger.info("photo name : {0}".format(photoName))
-    logger.info("author: {0}".format(authorName))
+    imageUrl, photoName, authorName = GetBestPhotoInfo(consumer_key)
 
     # download image
     #
@@ -70,17 +63,6 @@ def main():
     logger.info("done")
 
 
-
-def GetConfig():
-
-    application_path, application_name = GetAppNames()
-    config_fullname = os.path.join(application_path, '{0}.config'.format(application_name))
-
-    with open(config_fullname) as config:
-        config = json.loads(config.read())
-        return config["authentication"]["consumer_key"], config["image_path"], config["image_file"]
-
-
 def GetAppNames():
 
     # determine if application is a script file or frozen exe and return name
@@ -92,6 +74,36 @@ def GetAppNames():
         application_path = os.path.dirname(__file__)
         application_name = os.path.basename(__file__).replace('.py','')
     return application_path, application_name
+
+def GetConfig():
+
+    application_path, application_name = GetAppNames()
+    config_fullname = os.path.join(application_path, '{0}.config'.format(application_name))
+
+    with open(config_fullname) as config:
+        config = json.loads(config.read())
+        return config["authentication"]["consumer_key"], config["image_path"], config["image_file"]
+
+def GetBestPhotoInfo(consumer_key):
+
+    try:
+        logger = logging.getLogger()
+        logger.info("download wallpaper info...")
+
+        requestUrl = "https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=1&consumer_key={0}".format(consumer_key)
+        jsonResult = requests.get(requestUrl).json()
+        imageUrl = jsonResult['photos'][0]['images'][0]['url']
+        imageFormat = jsonResult["photos"][0]["images"][0]["format"]
+        photoName = jsonResult['photos'][0]['name']
+        authorName = jsonResult['photos'][0]['user']['fullname']
+
+        logger.info("photo name : {0}".format(photoName))
+        logger.info("author: {0}".format(authorName))
+
+    except Exception as e:
+        logger.exception("Get photo info error")
+
+    return imageUrl, photoName, authorName
 
 if __name__ == "__main__":
     main()
