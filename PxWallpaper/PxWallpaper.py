@@ -53,12 +53,13 @@ def main():
 
     # write info
     #
-    fontDark = ImageFont.truetype(os.path.join(application_path,"Verdana.ttf"), 23)
-    fontLight = ImageFont.truetype(os.path.join(application_path,"Verdana.ttf"), 20)
+    fontPath = os.path.join(application_path,"Verdana.ttf")
+    fontDark = ImageFont.truetype(fontPath, 23)
+    fontLight = ImageFont.truetype(fontPath, 20)
     image = Image.open(photoFullName)
     draw = ImageDraw.Draw(image)
-    draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (0,0,0), font = fontDark)
-    draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (200,255,128), font = fontLight)
+    draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (0,0,0), fontDark)
+    draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (200,255,128), fontLight)
     draw = ImageDraw.Draw(image)
     image.save(photoFullName)
     
