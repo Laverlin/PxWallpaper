@@ -15,13 +15,15 @@ def main():
     application_path, application_name = GetAppNames()
     logger = SetupLogging(application_path, application_name)
 
-    consumer_key, image_path, image_file = GetConfig()
+    consumer_key, image_path, image_file, fontName, logLevel = GetConfig(application_path, application_name)
+    logger.setLevel(logLevel)
 
     imageUrl, photoName, authorName = GetBestPhotoInfo(consumer_key)
     photoFullPath = os.path.join(image_path, image_file)
     GetBestPhotoImage(imageUrl, photoFullPath)
 
-    WriteOverPhoto(application_path, photoFullPath, photoName, authorName)
+    fontFullPath = os.path.join(application_path, fontName)
+    WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName)
 
     ctypes.windll.user32.SystemParametersInfoW(20, 0, photoFullPath, 1)
 
@@ -60,14 +62,19 @@ def SetupLogging(application_path, application_name):
 
 ### getting data from config file
 ###
-def GetConfig():
+def GetConfig(application_path, application_name):
 
-    application_path, application_name = GetAppNames()
-    config_fullname = os.path.join(application_path, '{0}.config'.format(application_name))
+    try:
+        logger = logging.getLogger()
+        config_fullname = os.path.join(application_path, '{0}.config'.format(application_name))
 
-    with open(config_fullname) as config:
-        config = json.loads(config.read())
-        return config["authentication"]["consumer_key"], config["image_path"], config["image_file"]
+        with open(config_fullname) as config:
+            config = json.loads(config.read())
+            return config["authentication"]["consumer_key"], config["image_path"], config["image_file"], config["font_name"], config["log_level"]
+
+    except Exception as e:
+        logger.exception("error reading config")
+        raise
 
 ### getting best photo info form 500px
 ###
@@ -113,13 +120,13 @@ def GetBestPhotoImage(imageUrl, photoFullPath):
 
 ## Write info over image 
 ##
-def WriteOverPhoto(application_path, photoFullPath, photoName, authorName):
+def WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName):
 
     try:
         logger = logging.getLogger()
-        fontPath = os.path.join(application_path, "Verdana.ttf")
-        fontDark = ImageFont.truetype(fontPath, 23)
-        fontLight = ImageFont.truetype(fontPath, 20)
+
+        fontDark = ImageFont.truetype(fontFullPath, 23)
+        fontLight = ImageFont.truetype(fontFullPath, 20)
         image = Image.open(photoFullPath)
         draw = ImageDraw.Draw(image)
         draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (0,0,0), fontDark)
