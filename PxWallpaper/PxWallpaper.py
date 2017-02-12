@@ -22,6 +22,8 @@ def main():
     photoFullPath = os.path.join(image_path, image_file)
     GetBestPhotoImage(imageUrl, photoFullPath)
 
+    MakeFit2Screen(photoFullPath)
+
     fontFullPath = os.path.join(application_path, fontName)
     WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName)
 
@@ -43,8 +45,8 @@ def GetAppNames():
         application_name = os.path.basename(__file__).replace('.py','')
     return application_path, application_name
 
-## Setup logging infrastructure
-##
+### Setup logging infrastructure
+###
 def SetupLogging(application_path, application_name):
 
     logger = logging.getLogger()
@@ -104,8 +106,8 @@ def GetBestPhotoInfo(consumer_key):
 
     return imageUrl, photoName, authorName
 
-## Download photo
-##
+### Download photo
+###
 def GetBestPhotoImage(imageUrl, photoFullPath):
 
     try:
@@ -123,24 +125,54 @@ def GetBestPhotoImage(imageUrl, photoFullPath):
         logger.exception("error download photo")
         raise
 
-## Write info over image 
-##
+### Write info over image 
+###
 def WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName):
 
     try:
         logger = logging.getLogger()
 
-        fontDark = ImageFont.truetype(fontFullPath, 23)
-        fontLight = ImageFont.truetype(fontFullPath, 20)
+        fontDark = ImageFont.truetype(fontFullPath, 18)
+        fontLight = ImageFont.truetype(fontFullPath, 18)
         image = Image.open(photoFullPath)
         draw = ImageDraw.Draw(image)
-        draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (0,0,0), fontDark)
-        draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (200,255,128), fontLight)
+        draw.text((3, 3), '"{0}" by {1}'.format(photoName, authorName), (0,0,0), fontDark)
+        draw.text((0, 0), '"{0}" by {1}'.format(photoName, authorName), (158,255,128), fontLight)
         draw = ImageDraw.Draw(image)
         image.save(photoFullPath)
     except Exception as e:
         logger.exception("error write over")
         raise
+
+### Make image appropriate size to fit in screen
+###
+def MakeFit2Screen(photoFullPath):
+
+    try:
+        logger = logging.getLogger()
+
+        user32 = ctypes.windll.user32
+        user32.SetProcessDPIAware()
+        screenWidth, screenHeight = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+        logger.debug("screen width: {0}, height: {1}".format(screenWidth, screenHeight))
+
+        screenImage = Image.new("RGB", (screenWidth, screenHeight), (0, 0, 0))
+        photoImage = Image.open(photoFullPath)
+
+        ratio = min(screenWidth / photoImage.width, screenHeight / photoImage.height)
+        newWidth = int(photoImage.width * ratio)
+        newHeight = int(photoImage.height * ratio)
+        logger.debug("resize: original ({0}x{1}), ratio ({2}), new ({3}x{4})"
+                     .format(photoImage.width, photoImage.height, ratio, newWidth, newHeight))
+        photoImage = photoImage.resize((newWidth, newHeight), Image.LANCZOS)
+
+        screenImage.paste(photoImage, (int((screenWidth - newWidth) / 2 ), int((screenHeight - newHeight) / 2)))
+        screenImage.save(photoFullPath)
+
+    except Exception as e:
+        logger.exception("error photo postprocess")
+        raise
+
 
 if __name__ == "__main__":
     main()
