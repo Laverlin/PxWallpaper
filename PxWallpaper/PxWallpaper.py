@@ -85,7 +85,11 @@ def GetBestPhotoInfo(consumer_key):
         logger.info("download wallpaper info...")
 
         requestUrl = "https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=1&consumer_key={0}".format(consumer_key)
-        jsonResult = requests.get(requestUrl).json()
+        response = requests.get(requestUrl)
+        if response.status_code != 200:
+            raise ConnectionError("Cant get info, status: {0}, text: {1}".format(response.status_code, response.text))
+
+        jsonResult = response.json()
         imageUrl = jsonResult['photos'][0]['images'][0]['url']
         imageFormat = jsonResult["photos"][0]["images"][0]["format"]
         photoName = jsonResult['photos'][0]['name']
@@ -108,12 +112,13 @@ def GetBestPhotoImage(imageUrl, photoFullPath):
         logger = logging.getLogger()
         logger.debug("get image: {0}".format(imageUrl))
         imageResponse = requests.get(imageUrl, stream = True)
-        if imageResponse.status_code == 200:
-            with open(photoFullPath, "wb") as imageFile:
-                imageResponse.raw.decode_content = True
-                shutil.copyfileobj(imageResponse.raw, imageFile)
-        else:
-            raise ConnectionError("can not download photo")
+        if imageResponse.status_code != 200:
+            raise ConnectionError("can not download photo, status:{0}, text:{1}".format(imageResponse.status_code, imageResponse.text))
+
+        with open(photoFullPath, "wb") as imageFile:
+            imageResponse.raw.decode_content = True
+            shutil.copyfileobj(imageResponse.raw, imageFile)
+            
     except Exception as e:
         logger.exception("error download photo")
         raise
