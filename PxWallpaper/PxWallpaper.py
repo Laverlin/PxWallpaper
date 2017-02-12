@@ -12,57 +12,23 @@ from PIL import ImageDraw
 
 def main():
 
-    # setup logging
-    #
     application_path, application_name = GetAppNames()
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    logFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logger = SetupLogging(application_path, application_name)
 
-    logFileHandler = logging.FileHandler(os.path.join(application_path, '{0}.log'.format(application_name)))
-    logFileHandler.setFormatter(logFormatter)
-    logger.addHandler(logFileHandler)
-
-    logConsoleHandler = logging.StreamHandler()
-    logConsoleHandler.setFormatter(logFormatter) 
-    logger.addHandler(logConsoleHandler)
-
-    # load config
-    #
     consumer_key, image_path, image_file = GetConfig()
 
-    # request best photo info
-    #
     imageUrl, photoName, authorName = GetBestPhotoInfo(consumer_key)
+    photoFullPath = os.path.join(image_path, image_file)
+    GetBestPhotoImage(imageUrl, photoFullPath)
 
-    # download image
-    #
-    photoFullName = os.path.join(image_path, image_file)
-    imageResponse = requests.get(imageUrl, stream = True)
-    if imageResponse.status_code == 200:
-        with open(photoFullName, "wb") as imageFile:
-            imageResponse.raw.decode_content = True
-            shutil.copyfileobj(imageResponse.raw, imageFile)
+    WriteOverPhoto(application_path, photoFullPath, photoName, authorName)
 
-    # write info
-    #
-    fontPath = os.path.join(application_path,"Verdana.ttf")
-    fontDark = ImageFont.truetype(fontPath, 23)
-    fontLight = ImageFont.truetype(fontPath, 20)
-    image = Image.open(photoFullName)
-    draw = ImageDraw.Draw(image)
-    draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (0,0,0), fontDark)
-    draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (200,255,128), fontLight)
-    draw = ImageDraw.Draw(image)
-    image.save(photoFullName)
-    
-    # refresh background picture
-    #
-    ctypes.windll.user32.SystemParametersInfoW(20, 0, photoFullName , 1)
+    ctypes.windll.user32.SystemParametersInfoW(20, 0, photoFullPath, 1)
 
     logger.info("done")
 
-
+### get path to executable file and name of executable file
+###
 def GetAppNames():
 
     # determine if application is a script file or frozen exe and return name
@@ -75,6 +41,25 @@ def GetAppNames():
         application_name = os.path.basename(__file__).replace('.py','')
     return application_path, application_name
 
+## Setup logging infrastructure
+##
+def SetupLogging(application_path, application_name):
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    logFileHandler = logging.FileHandler(os.path.join(application_path, '{0}.log'.format(application_name)))
+    logFileHandler.setFormatter(logFormatter)
+    logger.addHandler(logFileHandler)
+
+    logConsoleHandler = logging.StreamHandler()
+    logConsoleHandler.setFormatter(logFormatter) 
+    logger.addHandler(logConsoleHandler)
+    return logger
+
+### getting data from config file
+###
 def GetConfig():
 
     application_path, application_name = GetAppNames()
@@ -84,6 +69,8 @@ def GetConfig():
         config = json.loads(config.read())
         return config["authentication"]["consumer_key"], config["image_path"], config["image_file"]
 
+### getting best photo info form 500px
+###
 def GetBestPhotoInfo(consumer_key):
 
     try:
@@ -101,9 +88,47 @@ def GetBestPhotoInfo(consumer_key):
         logger.info("author: {0}".format(authorName))
 
     except Exception as e:
-        logger.exception("Get photo info error")
+        logger.exception("error getting photo info")
+        raise
 
     return imageUrl, photoName, authorName
+
+## Download photo
+##
+def GetBestPhotoImage(imageUrl, photoFullPath):
+
+    try:
+        logger = logging.getLogger()
+        logger.debug("get image: {0}".format(imageUrl))
+        imageResponse = requests.get(imageUrl, stream = True)
+        if imageResponse.status_code == 200:
+            with open(photoFullPath, "wb") as imageFile:
+                imageResponse.raw.decode_content = True
+                shutil.copyfileobj(imageResponse.raw, imageFile)
+        else:
+            raise ConnectionError("can not download photo")
+    except Exception as e:
+        logger.exception("error download photo")
+        raise
+
+## Write info over image 
+##
+def WriteOverPhoto(application_path, photoFullPath, photoName, authorName):
+
+    try:
+        logger = logging.getLogger()
+        fontPath = os.path.join(application_path, "Verdana.ttf")
+        fontDark = ImageFont.truetype(fontPath, 23)
+        fontLight = ImageFont.truetype(fontPath, 20)
+        image = Image.open(photoFullPath)
+        draw = ImageDraw.Draw(image)
+        draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (0,0,0), fontDark)
+        draw.text((0, 0), "'{0}' by {1}".format(photoName, authorName), (200,255,128), fontLight)
+        draw = ImageDraw.Draw(image)
+        image.save(photoFullPath)
+    except Exception as e:
+        logger.exception("error write over")
+        raise
 
 if __name__ == "__main__":
     main()
