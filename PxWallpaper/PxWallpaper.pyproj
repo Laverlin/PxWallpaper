@@ -22,6 +22,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Config.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="PxWallpaper.py" />
   </ItemGroup>
   <ItemGroup>

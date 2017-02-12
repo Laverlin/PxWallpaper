@@ -9,22 +9,24 @@ import PIL
 from PIL import ImageFont
 from PIL import Image
 from PIL import ImageDraw
+import Config
 
 def main():
 
     application_path, application_name = GetAppNames()
     logger = SetupLogging(application_path, application_name)
 
-    consumer_key, image_path, image_file, fontName, logLevel = GetConfig(application_path, application_name)
-    logger.setLevel(logLevel)
+    config = GetConfig(application_path, application_name)
+    
+    logger.setLevel(config.LogLevel)
 
-    imageUrl, photoName, authorName = GetBestPhotoInfo(consumer_key)
-    photoFullPath = os.path.join(image_path, image_file)
+    imageUrl, photoName, authorName = GetBestPhotoInfo(config.ConsumerKey)
+    photoFullPath = os.path.join(config.ImagePath, config.ImageFile)
     GetBestPhotoImage(imageUrl, photoFullPath)
 
     MakeFit2Screen(photoFullPath)
 
-    fontFullPath = os.path.join(application_path, fontName)
+    fontFullPath = os.path.join(application_path, config.FontName)
     WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName)
 
     ctypes.windll.user32.SystemParametersInfoW(20, 0, photoFullPath, 1)
@@ -70,9 +72,10 @@ def GetConfig(application_path, application_name):
         logger = logging.getLogger()
         config_fullname = os.path.join(application_path, '{0}.config'.format(application_name))
 
-        with open(config_fullname) as config:
-            config = json.loads(config.read())
-            return config["authentication"]["consumer_key"], config["image_path"], config["image_file"], config["font_name"], config["log_level"]
+        with open(config_fullname) as configFile:
+            jsonData = json.loads(configFile.read())
+            config = Config.AsConfig(jsonData)
+            return config;
 
     except Exception as e:
         logger.exception("error reading config")
