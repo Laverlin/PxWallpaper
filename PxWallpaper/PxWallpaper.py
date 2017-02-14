@@ -24,7 +24,7 @@ def main():
     photoFullPath = os.path.join(config.ImagePath, config.ImageFile)
     GetBestPhotoImage(imageUrl, photoFullPath)
 
-    MakeFit2Screen(photoFullPath)
+    Adjust2Screen(photoFullPath)
 
     fontFullPath = os.path.join(application_path, config.FontName)
     WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName)
@@ -135,12 +135,12 @@ def WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName):
     try:
         logger = logging.getLogger()
 
-        fontDark = ImageFont.truetype(fontFullPath, 18)
-        fontLight = ImageFont.truetype(fontFullPath, 18)
+        fontDark = ImageFont.truetype(fontFullPath, 24)
+        fontLight = ImageFont.truetype(fontFullPath, 24)
         image = Image.open(photoFullPath)
         draw = ImageDraw.Draw(image)
         draw.text((3, 3), '"{0}" by {1}'.format(photoName, authorName), (0,0,0), fontDark)
-        draw.text((0, 0), '"{0}" by {1}'.format(photoName, authorName), (158,255,128), fontLight)
+        draw.text((0, 0), '"{0}" by {1}'.format(photoName, authorName), (128,158,128), fontLight)
         draw = ImageDraw.Draw(image)
         image.save(photoFullPath)
     except Exception as e:
@@ -149,7 +149,7 @@ def WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName):
 
 ### Make image appropriate size to fit in screen
 ###
-def MakeFit2Screen(photoFullPath):
+def Adjust2Screen(photoFullPath):
 
     try:
         logger = logging.getLogger()
