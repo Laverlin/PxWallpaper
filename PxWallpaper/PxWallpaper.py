@@ -27,7 +27,7 @@ def main():
     Adjust2Screen(photoFullPath)
 
     fontFullPath = os.path.join(application_path, config.FontName)
-    WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName)
+    WriteOverPhoto(fontFullPath, config.FontSize, photoFullPath, photoName, authorName)
 
     ctypes.windll.user32.SystemParametersInfoW(20, 0, photoFullPath, 1)
 
@@ -130,13 +130,13 @@ def GetBestPhotoImage(imageUrl, photoFullPath):
 
 ### Write info over image 
 ###
-def WriteOverPhoto(fontFullPath, photoFullPath, photoName, authorName):
+def WriteOverPhoto(fontFullPath, fontSize, photoFullPath, photoName, authorName):
 
     try:
         logger = logging.getLogger()
 
-        fontDark = ImageFont.truetype(fontFullPath, 24)
-        fontLight = ImageFont.truetype(fontFullPath, 24)
+        fontDark = ImageFont.truetype(fontFullPath, fontSize)
+        fontLight = ImageFont.truetype(fontFullPath, fontSize)
         image = Image.open(photoFullPath)
         draw = ImageDraw.Draw(image)
         draw.text((3, 3), '"{0}" by {1}'.format(photoName, authorName), (0,0,0), fontDark)
