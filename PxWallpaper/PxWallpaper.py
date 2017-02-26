@@ -10,6 +10,7 @@ from PIL import ImageFont
 from PIL import Image
 from PIL import ImageDraw
 import Config
+import subprocess
 
 def main():
 
@@ -24,14 +25,20 @@ def main():
     photoFullPath = os.path.join(config.ImagePath, config.ImageFile)
     GetBestPhotoImage(imageUrl, photoFullPath)
 
-    Adjust2Screen(photoFullPath)
+    ScreenWidth, ScreenHeight = Adjust2Screen(photoFullPath)
 
     fontFullPath = os.path.join(application_path, config.FontName)
     WriteOverPhoto(fontFullPath, config.FontSize, photoFullPath, photoName, authorName)
 
+    # set new image as background
+    #
     ctypes.windll.user32.SystemParametersInfoW(20, 0, photoFullPath, 1)
 
-    logger.info("done")
+    #set new image as lock screen
+    #
+    WriteLockScreenImage(photoFullPath, ScreenWidth, ScreenHeight)
+
+    logger.info("done.")
 
 ### get path to executable file and name of executable file
 ###
@@ -77,7 +84,7 @@ def GetConfig(application_path, application_name):
             config = Config.AsConfig(jsonData)
             return config;
 
-    except Exception as e:
+    except Exception:
         logger.exception("error reading config")
         raise
 
@@ -103,7 +110,7 @@ def GetBestPhotoInfo(consumer_key):
         logger.info("photo name : {0}".format(photoName))
         logger.info("author: {0}".format(authorName))
 
-    except Exception as e:
+    except Exception:
         logger.exception("error getting photo info")
         raise
 
@@ -124,7 +131,7 @@ def GetBestPhotoImage(imageUrl, photoFullPath):
             imageResponse.raw.decode_content = True
             shutil.copyfileobj(imageResponse.raw, imageFile)
             
-    except Exception as e:
+    except Exception:
         logger.exception("error download photo")
         raise
 
@@ -143,7 +150,7 @@ def WriteOverPhoto(fontFullPath, fontSize, photoFullPath, photoName, authorName)
         draw.text((0, 0), '"{0}" by {1}'.format(photoName, authorName), (128,158,128), fontLight)
         draw = ImageDraw.Draw(image)
         image.save(photoFullPath)
-    except Exception as e:
+    except Exception:
         logger.exception("error write over")
         raise
 
@@ -172,9 +179,51 @@ def Adjust2Screen(photoFullPath):
         screenImage.paste(photoImage, (int((screenWidth - newWidth) / 2 ), int((screenHeight - newHeight) / 2)))
         screenImage.save(photoFullPath)
 
-    except Exception as e:
+        return screenWidth, screenHeight
+
+    except Exception:
         logger.exception("error photo postprocess")
         raise
+
+### execute OS command. Use to take ownership on system folder
+###
+def ExecuteShell(command):
+    
+    logger = logging.getLogger()
+
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    retval = process.wait()
+    if retval != 0:
+        logger.error('execute shell error:{0}, retvalue:{1}'.format(process.stdout.read(), retval))
+
+### Get permission of system folders to change lock screen
+###
+def GetPermission(lockScreenFolder):
+
+    logger = logging.getLogger()
+    logger.debug('Get permissions on lock screen folder')
+
+    ExecuteShell('takeown /F {0} /R /D Y'.format(lockScreenFolder))
+    ExecuteShell('icacls {0}\* /inheritance:e /T'.format(lockScreenFolder))
+    ExecuteShell('icacls {0} /setowner Administrators /T'.format(lockScreenFolder))
+
+### overwrite system cache image of lock screen
+###
+def WriteLockScreenImage(photoFullPath, screenWidth, screenHeight):
+
+    logger = logging.getLogger()
+
+    lockScreenFolder = 'C:\ProgramData\Microsoft\Windows\SystemData\S-1-5-18\ReadOnly'
+    imageName = "lockScreen___{0}_{1}_notdimmed.jpg".format(screenWidth, screenHeight)
+
+    GetPermission(lockScreenFolder)
+
+    folders = os.listdir(lockScreenFolder)
+    for folder in folders:
+        if (folder.startswith("LockScreen")):
+            lockScreenFile = os.path.join(lockScreenFolder, folder, imageName)
+            logger.info('write lock screen file : {0}'.format(lockScreenFile))
+            shutil.copyfile(photoFullPath, lockScreenFile)
 
 
 if __name__ == "__main__":

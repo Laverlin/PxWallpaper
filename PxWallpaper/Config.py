@@ -9,8 +9,6 @@ class Config(object):
         self.FontName = fontName
         self.FontSize = int(fontSize)
 
-import json
-
 def AsConfig(jsonData):
 
     return Config(jsonData["authentication"]["consumer_key"], jsonData["image_path"], jsonData["image_file"], 
