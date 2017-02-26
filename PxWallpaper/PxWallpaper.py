@@ -21,14 +21,14 @@ def main():
     
     logger.setLevel(config.LogLevel)
 
-    imageUrl, photoName, authorName = GetBestPhotoInfo(config.ConsumerKey)
+    imageUrl, photoName, authorName, location = GetBestPhotoInfo(config.ConsumerKey)
     photoFullPath = os.path.join(config.ImagePath, config.ImageFile)
     GetBestPhotoImage(imageUrl, photoFullPath)
 
     ScreenWidth, ScreenHeight = Adjust2Screen(photoFullPath)
 
     fontFullPath = os.path.join(application_path, config.FontName)
-    WriteOverPhoto(fontFullPath, config.FontSize, photoFullPath, photoName, authorName)
+    WriteOverPhoto(fontFullPath, config.FontSize, photoFullPath, photoName, authorName, location)
 
     # set new image as background
     #
@@ -106,15 +106,17 @@ def GetBestPhotoInfo(consumer_key):
         imageFormat = jsonResult["photos"][0]["images"][0]["format"]
         photoName = jsonResult['photos'][0]['name']
         authorName = jsonResult['photos'][0]['user']['fullname']
+        location = jsonResult['photos'][0]['location']
 
         logger.info("photo name : {0}".format(photoName))
         logger.info("author: {0}".format(authorName))
+        logger.info("location: {0}".format(location))
 
     except Exception:
         logger.exception("error getting photo info")
         raise
 
-    return imageUrl, photoName, authorName
+    return imageUrl, photoName, authorName, location
 
 ### Download photo
 ###
@@ -137,18 +139,24 @@ def GetBestPhotoImage(imageUrl, photoFullPath):
 
 ### Write info over image 
 ###
-def WriteOverPhoto(fontFullPath, fontSize, photoFullPath, photoName, authorName):
+def WriteOverPhoto(fontFullPath, fontSize, photoFullPath, photoName, authorName, location):
 
     try:
         logger = logging.getLogger()
 
-        fontDark = ImageFont.truetype(fontFullPath, fontSize)
-        fontLight = ImageFont.truetype(fontFullPath, fontSize)
+        font = ImageFont.truetype(fontFullPath, fontSize)
         image = Image.open(photoFullPath)
         draw = ImageDraw.Draw(image)
-        draw.text((3, 3), '"{0}" by {1}'.format(photoName, authorName), (0,0,0), fontDark)
-        draw.text((0, 0), '"{0}" by {1}'.format(photoName, authorName), (128,158,128), fontLight)
-        draw = ImageDraw.Draw(image)
+        authorText = '"{0}" by {1}'.format(photoName, authorName)
+        draw.text((3, 3), authorText, (0,0,0), font)
+        draw.text((0, 0), authorText, (128,158,128), font)
+        if location is not None:
+            textWidth, textHeight = fontDark.getsize(authorText)
+            locationText = 'at {0}'.format(location)
+            draw.text((3, textHeight + 10), locationText, (0,0,0), font)
+            draw.text((0, textHeight + 7), locationText, (128,158,128), font)
+
+       # draw = ImageDraw.Draw(image)
         image.save(photoFullPath)
     except Exception:
         logger.exception("error write over")
