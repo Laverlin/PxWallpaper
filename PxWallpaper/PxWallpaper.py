@@ -96,21 +96,35 @@ def GetBestPhotoInfo(consumer_key):
         logger = logging.getLogger()
         logger.info("download wallpaper info...")
 
-        requestUrl = "https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=1&consumer_key={0}".format(consumer_key)
+        requestUrl = "https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=2&consumer_key={0}".format(consumer_key)
         response = requests.get(requestUrl)
         if response.status_code != 200:
             raise ConnectionError("Cant get info, status: {0}, text: {1}".format(response.status_code, response.text))
 
         jsonResult = response.json()
-        imageUrl = jsonResult['photos'][0]['images'][0]['url']
-        imageFormat = jsonResult["photos"][0]["images"][0]["format"]
-        photoName = jsonResult['photos'][0]['name']
-        authorName = jsonResult['photos'][0]['user']['fullname']
-        location = jsonResult['photos'][0]['location']
+        photoId = 0
+        imageUrl = jsonResult['photos'][photoId]['images'][0]['url']
+        imageFormat = jsonResult["photos"][photoId]["images"][0]["format"]
+        photoName = jsonResult['photos'][photoId]['name']
+        authorName = jsonResult['photos'][photoId]['user']['fullname']
+        location = jsonResult['photos'][photoId]['location']
+        lat = jsonResult['photos'][photoId]['latitude']
+        lon = jsonResult['photos'][photoId]['longitude']
 
         logger.info("photo name : {0}".format(photoName))
         logger.info("author: {0}".format(authorName))
-        logger.info("location: {0}".format(location))
+        logger.info("location: {0}, {1}, {2}".format(location, lat, lon))
+
+        if location is None and lat is not None and lon is not None:
+            logger.info("get location by geodata")
+
+            requestUrl = "http://api.geonames.org/findNearbyPlaceNameJSON?lat={0}&lng={1}&username=demo".format(lat, lon)
+            response = requests.get(requestUrl)
+            if response.status_code != 200:
+                raise ConnectionError("Cant get location, status: {0}, text: {1}".format(response.status_code, response.text))
+            jsonResult = response.json();
+            location = "{}, {}".format(jsonResult['geonames'][0]['name'], jsonResult['geonames'][0]['countryName'])
+            logger.info("location by geo : {}".format(location))
 
     except Exception:
         logger.exception("error getting photo info")
@@ -151,7 +165,7 @@ def WriteOverPhoto(fontFullPath, fontSize, photoFullPath, photoName, authorName,
         draw.text((3, 3), authorText, (0,0,0), font)
         draw.text((0, 0), authorText, (128,158,128), font)
         if location is not None:
-            textWidth, textHeight = fontDark.getsize(authorText)
+            textWidth, textHeight = font.getsize(authorText)
             locationText = 'at {0}'.format(location)
             draw.text((3, textHeight + 10), locationText, (0,0,0), font)
             draw.text((0, textHeight + 7), locationText, (128,158,128), font)
