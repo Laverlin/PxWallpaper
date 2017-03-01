@@ -21,7 +21,7 @@ def main():
     
     logger.setLevel(config.LogLevel)
 
-    imageUrl, photoName, authorName, location = GetBestPhotoInfo(config.ConsumerKey)
+    imageUrl, photoName, authorName, location = GetBestPhotoInfo(config.ConsumerKey, config.GeoApiUser)
     photoFullPath = os.path.join(config.ImagePath, config.ImageFile)
     GetBestPhotoImage(imageUrl, photoFullPath)
 
@@ -90,13 +90,13 @@ def GetConfig(application_path, application_name):
 
 ### getting best photo info form 500px
 ###
-def GetBestPhotoInfo(consumer_key):
+def GetBestPhotoInfo(consumerKey, geoApiUser):
 
     try:
         logger = logging.getLogger()
         logger.info("download wallpaper info...")
 
-        requestUrl = "https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=2&consumer_key={0}".format(consumer_key)
+        requestUrl = "https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=2&consumer_key={0}".format(consumerKey)
         response = requests.get(requestUrl)
         if response.status_code != 200:
             raise ConnectionError("Cant get info, status: {0}, text: {1}".format(response.status_code, response.text))
@@ -118,13 +118,14 @@ def GetBestPhotoInfo(consumer_key):
         if location is None and lat is not None and lon is not None:
             logger.info("get location by geodata")
 
-            requestUrl = "http://api.geonames.org/findNearbyPlaceNameJSON?lat={0}&lng={1}&username=demo".format(lat, lon)
+            requestUrl = "http://api.geonames.org/findNearbyPlaceNameJSON?lat={0}&lng={1}&username={2}".format(lat, lon, geoApiUser)
             response = requests.get(requestUrl)
             if response.status_code != 200:
-                raise ConnectionError("Cant get location, status: {0}, text: {1}".format(response.status_code, response.text))
+                logger.exception("Cant get location, status: {0}, text: {1}".format(response.status_code, response.text))
             jsonResult = response.json();
-            location = "{}, {}".format(jsonResult['geonames'][0]['name'], jsonResult['geonames'][0]['countryName'])
-            logger.info("location by geo : {}".format(location))
+            if len(jsonResult['geonames']) > 0:
+                location = "{}, {}".format(jsonResult['geonames'][0]['name'], jsonResult['geonames'][0]['countryName'])
+                logger.info("location by geo : {}".format(location))
 
     except Exception:
         logger.exception("error getting photo info")
@@ -162,16 +163,18 @@ def WriteOverPhoto(fontFullPath, fontSize, photoFullPath, photoName, authorName,
         image = Image.open(photoFullPath)
         draw = ImageDraw.Draw(image)
         authorText = '"{0}" by {1}'.format(photoName, authorName)
-        draw.text((3, 3), authorText, (0,0,0), font)
+        for i in range(1, 4):
+            draw.text((i, i), authorText, (0,0,0), font)
         draw.text((0, 0), authorText, (128,158,128), font)
         if location is not None:
             textWidth, textHeight = font.getsize(authorText)
-            locationText = 'at {0}'.format(location)
-            draw.text((3, textHeight + 10), locationText, (0,0,0), font)
-            draw.text((0, textHeight + 7), locationText, (128,158,128), font)
+            locationText = '  at {0}'.format(location)
+            for i in range(1, 4):
+                draw.text((i, textHeight + fontSize / 2 + i), locationText, (0,0,0), font)
+            draw.text((0, textHeight + fontSize / 2), locationText, (128,158,128), font)
 
-       # draw = ImageDraw.Draw(image)
         image.save(photoFullPath)
+
     except Exception:
         logger.exception("error write over")
         raise
@@ -227,7 +230,7 @@ def GetPermission(lockScreenFolder):
 
     ExecuteShell('takeown /F {0} /R /D Y'.format(lockScreenFolder))
     ExecuteShell('icacls {0}\* /inheritance:e /T'.format(lockScreenFolder))
-    ExecuteShell('icacls {0} /setowner Administrators /T'.format(lockScreenFolder))
+   # ExecuteShell('icacls {0} /setowner Administrators /T'.format(lockScreenFolder))
 
 ### overwrite system cache image of lock screen
 ###
@@ -235,17 +238,21 @@ def WriteLockScreenImage(photoFullPath, screenWidth, screenHeight):
 
     logger = logging.getLogger()
 
-    lockScreenFolder = 'C:\ProgramData\Microsoft\Windows\SystemData\S-1-5-18\ReadOnly'
+    systemFolder = 'C:\ProgramData\Microsoft\Windows\SystemData'
+    GetPermission(systemFolder)
+
     imageName = "lockScreen___{0}_{1}_notdimmed.jpg".format(screenWidth, screenHeight)
 
-    GetPermission(lockScreenFolder)
-
-    folders = os.listdir(lockScreenFolder)
-    for folder in folders:
-        if (folder.startswith("LockScreen")):
-            lockScreenFile = os.path.join(lockScreenFolder, folder, imageName)
-            logger.info('write lock screen file : {0}'.format(lockScreenFile))
-            shutil.copyfile(photoFullPath, lockScreenFile)
+    userFolders = os.listdir(systemFolder)
+    for userFolder in userFolders:
+        if userFolder.startswith('S-'):
+            lockScreenFolder = os.path.join(systemFolder, userFolder, 'ReadOnly')
+            folders = os.listdir(lockScreenFolder)
+            for folder in folders:
+                if (folder.startswith("LockScreen")):
+                    lockScreenFile = os.path.join(lockScreenFolder, folder, imageName)
+                    logger.info('write lock screen file : {0}'.format(lockScreenFile))
+                    shutil.copyfile(photoFullPath, lockScreenFile)
 
 
 if __name__ == "__main__":
