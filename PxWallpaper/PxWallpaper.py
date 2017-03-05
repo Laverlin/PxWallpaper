@@ -9,7 +9,7 @@ import PIL
 from PIL import ImageFont
 from PIL import Image
 from PIL import ImageDraw
-import Config
+import PxWallpaperConfig
 import subprocess
 
 
@@ -80,7 +80,7 @@ def GetConfig(application_path, application_name):
         logger = logging.getLogger()
 
         ini_fullname = os.path.join(application_path, '{0}.ini'.format(application_name))
-        config = Config.Config(ini_fullname)
+        config = PxWallpaperConfig.Config(ini_fullname)
         return config
 
     except Exception:

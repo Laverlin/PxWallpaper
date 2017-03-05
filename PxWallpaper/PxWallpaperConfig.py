@@ -1,4 +1,4 @@
-import configparser
+
 from configparser import SafeConfigParser
 
 class Config(object):
