@@ -12,6 +12,7 @@ from PIL import ImageDraw
 import Config
 import subprocess
 
+
 def main():
 
     application_path, application_name = GetAppNames()
@@ -19,16 +20,16 @@ def main():
 
     config = GetConfig(application_path, application_name)
     
-    logger.setLevel(config.LogLevel)
+    logger.setLevel(config.log_level)
 
-    imageUrl, photoName, authorName, location = GetBestPhotoInfo(config.ConsumerKey, config.GeoApiUser)
-    photoFullPath = os.path.join(config.ImagePath, config.ImageFile)
+    imageUrl, photoName, authorName, location = GetBestPhotoInfo(config.consumer_key, config.geo_api_user)
+    photoFullPath = os.path.join(config.image_path, config.image_file)
     GetBestPhotoImage(imageUrl, photoFullPath)
 
     ScreenWidth, ScreenHeight = Adjust2Screen(photoFullPath)
 
-    fontFullPath = os.path.join(application_path, config.FontName)
-    WriteOverPhoto(fontFullPath, config.FontSize, photoFullPath, photoName, authorName, location)
+    fontFullPath = os.path.join(application_path, config.font_name)
+    WriteOverPhoto(fontFullPath, int(config.font_size), photoFullPath, photoName, authorName, location)
 
     # set new image as background
     #
@@ -77,12 +78,10 @@ def GetConfig(application_path, application_name):
 
     try:
         logger = logging.getLogger()
-        config_fullname = os.path.join(application_path, '{0}.config'.format(application_name))
 
-        with open(config_fullname) as configFile:
-            jsonData = json.loads(configFile.read())
-            config = Config.AsConfig(jsonData)
-            return config;
+        ini_fullname = os.path.join(application_path, '{0}.ini'.format(application_name))
+        config = Config.Config(ini_fullname)
+        return config
 
     except Exception:
         logger.exception("error reading config")

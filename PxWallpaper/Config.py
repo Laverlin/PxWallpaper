@@ -1,18 +1,17 @@
+import configparser
+from configparser import SafeConfigParser
+
 class Config(object):
-    """configuration data"""
 
-    def __init__(self, consumerKey, imagePath, imageFile, fontName, fontSize, logLevel, geoApiUser):
-        self.ConsumerKey = consumerKey
-        self.ImagePath = imagePath
-        self.ImageFile = imageFile
-        self.LogLevel = logLevel
-        self.FontName = fontName
-        self.FontSize = int(fontSize)
-        self.GeoApiUser = geoApiUser
+    def __init__(self, *file_names):
 
-def AsConfig(jsonData):
+        parser = SafeConfigParser()
+        parser.optionxform = str  # make option names case sensitive
 
-    return Config(jsonData["authentication"]["consumer_key"], jsonData["image_path"], jsonData["image_file"], 
-                  jsonData["font_name"], jsonData["font_size"], jsonData["log_level"], jsonData["geo_api_user"])
+        found = parser.read(file_names)
+        if not found:
+            raise ValueError('No config file found!')
 
+        for name in parser.sections():
+            self.__dict__.update(parser.items(name))
 

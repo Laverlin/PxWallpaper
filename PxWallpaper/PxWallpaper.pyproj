@@ -31,6 +31,7 @@
     <Content Include="PxWallpaper.config">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="PxWallpaper.ini" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
