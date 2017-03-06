@@ -1,4 +1,3 @@
-
 from configparser import SafeConfigParser
 
 class Config(object):
@@ -14,4 +13,7 @@ class Config(object):
 
         for name in parser.sections():
             self.__dict__.update(parser.items(name))
+        
+        if not 'category_exclude' in dir(self):
+            self.category_exclude = 'none'
 

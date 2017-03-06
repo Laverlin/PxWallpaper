@@ -28,9 +28,6 @@
     <Compile Include="PxWallpaper.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="PxWallpaper.config">
-      <SubType>Code</SubType>
-    </Content>
     <Content Include="PxWallpaper.ini" />
   </ItemGroup>
   <PropertyGroup>

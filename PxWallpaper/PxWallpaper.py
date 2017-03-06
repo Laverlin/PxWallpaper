@@ -22,7 +22,7 @@ def main():
     
     logger.setLevel(config.log_level)
 
-    imageUrl, photoName, authorName, location = GetBestPhotoInfo(config.consumer_key, config.geo_api_user)
+    imageUrl, photoName, authorName, location = GetBestPhotoInfo(config.consumer_key, config.geo_api_user, config.category_exclude)
     photoFullPath = os.path.join(config.image_path, config.image_file)
     GetBestPhotoImage(imageUrl, photoFullPath)
 
@@ -89,13 +89,16 @@ def GetConfig(application_path, application_name):
 
 ### getting best photo info form 500px
 ###
-def GetBestPhotoInfo(consumerKey, geoApiUser):
+def GetBestPhotoInfo(consumerKey, geoApiUser, category_exclude):
 
     try:
         logger = logging.getLogger()
         logger.info("download wallpaper info...")
 
-        requestUrl = "https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=2&consumer_key={0}".format(consumerKey)
+        requestUrl = "https://api.500px.com/v1/photos?feature=popular&image_size=2048&rpp=5&consumer_key={0}".format(consumerKey)
+        if category_exclude.lower() != 'none':
+            requestUrl += '&exclude={0}'.format(category_exclude)
+
         response = requests.get(requestUrl)
         if response.status_code != 200:
             raise ConnectionError("Cant get info, status: {0}, text: {1}".format(response.status_code, response.text))
