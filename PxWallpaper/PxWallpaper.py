@@ -11,6 +11,8 @@ from PIL import Image
 from PIL import ImageDraw
 import PxWallpaperConfig
 import subprocess
+from azure.storage.blob import BlockBlobService
+import random
 
 
 def main():
@@ -22,14 +24,17 @@ def main():
     
     logger.setLevel(config.log_level)
 
-    imageUrl, photoName, authorName, location = GetBestPhotoInfo(config.consumer_key, config.geo_api_user, config.category_exclude)
+    #imageUrl, photoName, authorName, location = GetBestPhotoInfo(config.consumer_key, config.geo_api_user, config.category_exclude)
     photoFullPath = os.path.join(config.image_path, config.image_file)
-    GetBestPhotoImage(imageUrl, photoFullPath)
+    #GetBestPhotoImage(imageUrl, photoFullPath)
+
+    GetPhotoBlob(config.azure_account, config.azure_key,photoFullPath)
+
 
     ScreenWidth, ScreenHeight = Adjust2Screen(photoFullPath)
 
-    fontFullPath = os.path.join(application_path, config.font_name)
-    WriteOverPhoto(fontFullPath, int(config.font_size), photoFullPath, photoName, authorName, location)
+    #fontFullPath = os.path.join(application_path, config.font_name)
+    #WriteOverPhoto(fontFullPath, int(config.font_size), photoFullPath, photoName, authorName, location)
 
     # set new image as background
     #
@@ -255,6 +260,37 @@ def WriteLockScreenImage(photoFullPath, screenWidth, screenHeight):
                     lockScreenFile = os.path.join(lockScreenFolder, folder, imageName)
                     logger.info('write lock screen file : {0}'.format(lockScreenFile))
                     shutil.copyfile(photoFullPath, lockScreenFile)
+
+
+def GetBlobList(account, key):
+
+    logger = logging.getLogger()
+
+    block_blob_service = BlockBlobService(account_name = account, account_key = key)
+
+    print("\nList blobs in the container")
+    generator = block_blob_service.list_blobs("photos")
+    for blob in generator:
+        print("\t Blob name: " + blob.name)
+    count = len(generator.items)
+    print("\t count: " + str(count))
+
+    rnd_index = random.randint(0, count-1)
+    print("\t index: " + str(rnd_index))
+    print("\t random: " + generator.items[rnd_index].name)
+
+
+def GetPhotoBlob(account, key, path):
+
+    logger = logging.getLogger()
+
+    block_blob_service = BlockBlobService(account_name = account, account_key = key)
+    generator = block_blob_service.list_blobs("photos")
+    rnd_index = random.randint(0, len(generator.items) - 1)
+
+    logger.info("name: " + generator.items[rnd_index].name + "\t to:" + path)
+
+    block_blob_service.get_blob_to_path("photos", generator.items[rnd_index].name, path)
 
 
 if __name__ == "__main__":
