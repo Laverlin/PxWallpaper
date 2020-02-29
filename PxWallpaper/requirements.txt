@@ -1,5 +1,5 @@
 olefile==0.44
 Pillow
-requests==2.13.0
+requests==2.20.0
 WMI==1.4.9
 
